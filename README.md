@@ -4,8 +4,7 @@
 
 ```sql
 select c.nombre_cliente , e.nombre , e.apellido1 
-from cliente c join empleado e on c.codigo_empleado_rep_ventas = e.codigo_empleado 
-join pago on codigo_cliente = codigo_cliente ;
+
 ```
 
  2  Muestra el nombre de los clientes que hayan realizado pagos junto con el nombre de sus representantes de ventas.
