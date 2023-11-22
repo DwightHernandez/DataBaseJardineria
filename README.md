@@ -1,127 +1,115 @@
-1. Obtén un listado con el nombre de cada cliente y el nombre y apellido de su representante de ventas.
-   
-   ```sql
-   SELECT 
-   c.nombre_cliente AS NombreCliente,
-   CONCAT(e.nombre, ' ', e.apellido1) AS NombreRepresentanteVentas
-   FROM cliente c
-   JOIN empleado e ON c.codigo_empleado_rep_ventas = e.codigo_empleado;
-   
-   
-   ```
+## Resuelva todas las consultas utilizando la sintaxis de SQL1 y SQL2. Las consultas con sintaxis de SQL2 se deben resolver con INNER JOIN y NATURAL JOIN.
 
-2. Muestra el nombre de los clientes que hayan realizado pagos junto con el nombre de sus representantes de ventas.
-   
-   ```sql
-   SELECT distinct
-   c.nombre_cliente AS NombreCliente,
-   CONCAT(e.nombre, ' ', e.apellido1) AS NombreRepresentanteVentas
-   FROM cliente c
-   JOIN pago p ON c.codigo_cliente = p.codigo_cliente
-   JOIN empleado e ON c.codigo_empleado_rep_ventas = e.codigo_empleado;
-   
-   ```
-   
-   
+ 1 Obtén un listado con el nombre de cada cliente y el nombre y apellido de su representante de ventas.
 
-3. Muestra eI nombre de los clientes que no hayan realizado pagos junto con eI nombre de sus representantes de ventas
-   
-   ```sql
-   SELECT
-   c.nombre_cliente AS NombreCliente,
-   CONCAT(e.nombre, ' ', e.apellido1) AS NombreRepresentanteVentas
-   FROM cliente c
-   LEFT JOIN empleado e ON c.codigo_empleado_rep_ventas = e.codigo_empleado
-   LEFT JOIN pago p ON c.codigo_cliente = p.codigo_cliente
-   WHERE p.codigo_cliente is NULL;
-   ```
+```sql
+select c.nombre_cliente , e.nombre , e.apellido1 
+from cliente c join empleado e on c.codigo_empleado_rep_ventas = e.codigo_empleado 
+join pago on codigo_cliente = codigo_cliente ;
+```
 
-4. Devuelve el nombre de los clientes que han hecho pagos y el nombre de sus representantes junto con la ciudad de la oficina a la que pertenece el representante.
-   
-   ```sql
-   SELECT
-     c.nombre_cliente AS NombreCliente,
-     CONCAT(e.nombre, ' ', e.apellido1) AS NombreRepresentanteVentas,
-     o.ciudad AS Ciudad
-   FROM cliente c
-   LEFT JOIN empleado e ON c.codigo_empleado_rep_ventas = e.codigo_empleado
-   INNER JOIN pago p ON c.codigo_cliente = p.codigo_cliente
-   INNER JOIN oficina o ON e.codigo_oficina = o.codigo_oficina;
-   ```
+ 2  Muestra el nombre de los clientes que hayan realizado pagos junto con el nombre de sus representantes de ventas.
+
+```sql
+select  c.nombre_cliente , e.nombre , e.apellido1 
+from cliente c join pago p on c.codigo_cliente = p.codigo_cliente
+join empleado e on e.codigo_empleado = c.codigo_empleado_rep_ventas; 
+```
+
+ 3   Muestra el nombre de los clientes que no hayan realizado pagos junto con el nombre de sus representantes de ventas.
+
+```sql
+select c.nombre_cliente, CONCAT(e.nombre, ' ', e.apellido1) as representante
+from cliente c
+join empleado e ON c.codigo_empleado_rep_ventas = e.codigo_empleado
+where c.codigo_cliente not in (select DISTINCT codigo_cliente from pago);
+```
+
+ 4 Devuelve el nombre de los clientes que han hecho pagos y el nombre de sus representantes junto con la ciudad de la oficina a la que pertenece el representante.
+
+```sql
+select c.nombre_cliente, CONCAT(e.nombre, ' ', e.apellido1) as representante, o.ciudad
+from cliente c
+join empleado e ON c.codigo_empleado_rep_ventas = e.codigo_empleado
+join oficina o ON e.codigo_oficina = o.codigo_oficina
+WHERE c.codigo_cliente IN (select DISTINCT codigo_cliente from pago);
+```
+
+ 5  Devuelve el nombre de los clientes que no hayan hecho pagos y el nombre de sus representantes junto con la ciudad de la oficina a la que pertenece el representante.
+
+```sql
+select c.nombre_cliente, CONCAT(e.nombre, ' ', e.apellido1) AS representante, o.ciudad
+from cliente c
+join empleado e ON c.codigo_empleado_rep_ventas = e.codigo_empleado
+join oficina o ON e.codigo_oficina = o.codigo_oficina
+WHERE c.codigo_cliente NOT IN (select DISTINCT codigo_cliente from pago);
+```
+
+ 6 Lista la dirección de las oficinas que tengan clientes en Fuenlabrada.
+
+```sql
+select  DISTINCT concat(' principal ', o.linea_direccion1,' complemento ', o.linea_direccion2) as direccion_oficina 
+from oficina o join empleado e on o.codigo_oficina = e.codigo_oficina 
+join cliente c on e.codigo_empleado = c.codigo_empleado_rep_ventas 
+where c.ciudad = 'Fuenlabrada';
+```
+
+ 7 Devuelve el nombre de los clientes y el nombre de sus representantes junto con la ciudad de la oficina a la que pertenece el representante.
+
+```sql
+select c.nombre_cliente, concat(e.nombre, ' ', e.apellido1, ' ', e.apellido2) as nombre_representante, o.ciudad  
+from cliente c 
+join empleado e on c.codigo_empleado_rep_ventas = e.codigo_empleado
+join oficina o on e.codigo_oficina = o.codigo_oficina;
+```
+
+ 8  Devuelve un listado con el nombre de los empleados junto con el nombre de sus jefes.
+
+```sql
+select concat(e1.nombre, ' ', e1.apellido1 ,' ' , e1.apellido2)  as empleado,e1.codigo_jefe , e2.codigo_empleado,
+ concat(e2.nombre, ' ', e2.apellido1 ,' ' , e2.apellido2)as jefe
+ from empleado e1 
+ join empleado e2 on e1.codigo_jefe = e2.codigo_empleado;
+ ```
+
+ 9 Devuelve un listado que muestre el nombre de cada empleados, el nombre de su jefe y el nombre del jefe de sus jefe.
+
+```sql
+select concat(e1.nombre, ' ', e1.apellido1 ,' ' , e1.apellido2)  as empleado,
+concat(e2.nombre, ' ', e2.apellido1 ,' ' , e2.apellido2) as jefe ,
+concat(e3.nombre, ' ', e3.apellido1 ,' ' , e3.apellido2) as jefe_de_jefes  
+from 
+empleado e1 join empleado e2 on e1.codigo_jefe = e2.codigo_empleado
+join empleado e3 on e2.codigo_jefe = e3.codigo_empleado order by empleado asc; 
+ ```
+
+ 10  Devuelve el nombre de los clientes a los que no se les ha entregado a tiempo un pedido.
+
+```sql
+select c.nombre_cliente as cliente, p.fecha_esperada, p.fecha_entrega ,p.estado  
+from cliente c join pedido p on c.codigo_cliente = p.codigo_cliente
+where p.fecha_entrega is null or estado = 'Pendiente'; 
 
 
+select c.nombre_cliente, p.fecha_esperada, p.fecha_entrega
+from cliente c
+join pedido p on c.codigo_cliente = p.codigo_cliente
+where p.fecha_entrega is null or lower(estado) = 'pendiente';
+```
 
-5. Devuelve el nombre de los clientes que no hayan hecho pagos y el nombre de sus representantes junto con la ciudad de la oficina a la que pertenece el representante.
-   
-   ```sql
-   SELECT DISTINCT
-     c.nombre_cliente AS NombreCliente,
-     CONCAT(e.nombre, ' ', e.apellido1) AS NombreRepresentanteVentas,
-     o.ciudad AS Ciudad
-   FROM cliente c
-   LEFT JOIN pago p ON c.codigo_cliente = p.codigo_cliente
-   JOIN empleado e ON c.codigo_empleado_rep_ventas = e.codigo_empleado
-   JOIN oficina o ON o.codigo_oficina = e.codigo_oficina
-   WHERE p.codigo_cliente is NULL
-   ```
+  11.   Devuelve un listado de las diferentes gamas de producto que ha comprado cada cliente.
 
-6. Lista la dirección de las oficinas que tengan clientes en Fuenlabrada.
-   
-   ```sql
-   SELECT DISTINCT
-     c.nombre_cliente AS NombreCliente, c.ciudad AS Ciudad_Cielnte, o.linea_direccion1 AS Direccion_Oficina
-   FROM cliente c
-   JOIN empleado e ON c.codigo_empleado_rep_ventas = e.codigo_empleado
-   JOIN oficina o ON o.codigo_oficina = e.codigo_oficina
-   WHERE c.ciudad = "Fuenlabrada";
-   ```
+```sql
+K
 
-7. Devuelve el nombre de los clientes y el nombre de sus representantes junto con la ciudad de la oficina a la que pertenece el representante.
+select c.codigo_cliente, 
+from
+join pedido p on c.codigo_cliente = p.codigo_cliente
+join detalle_pedido dp on p.codigo_pedido = dp.codigo_pedido
+join producto pr on dp.codigo_producto = pr.codigo_producto
 
-    ```SQL
-    SELECT DISTINCT c.nombre_cliente, e.nombre AS nombre_representante, o.ciudad FROM cliente c
-    JOIN empleado e ON c.codigo_empleado_rep_ventas = e.codigo_empleado
-    JOIN oficina o ON e.codigo_oficina = o.codigo_oficina;
-    ```
 
-8. Devuelve un listado con el nombre de los empleados junto con el nombre de sus jefes.
-
-    ```SQL
-    SELECT e.nombre AS nombre_empleado, e2.nombre AS nombre_jefe FROM empleado e
-    LEFT JOIN empleado e2 ON e.codigo_jefe = e2.codigo_empleado;
-    ```
-
-9. Devuelve un listado que muestre el nombre de cada empleado, el nombre de su jefe y el nombre del jefe de sus jefe.
-
-    ```SQL
-    SELECT e.nombre AS nombre_empleado, e2.nombre AS nombre_jefe, e3.nombre AS nombre_jefe_mayor
-    FROM empleado e
-    LEFT JOIN empleado e2 ON e.codigo_jefe = e2.codigo_empleado
-    LEFT JOIN empleado e3 ON e2.codigo_jefe = e3.codigo_empleado;
-    ```
-
-10. Devuelve el nombre de los clientes a los que no se les ha entregado a tiempo un pedido.
-
-    ```SQL
-    SELECT DISTINCT nombre_cliente FROM cliente c
-    JOIN pedido p ON c.codigo_cliente = p.codigo_cliente
-    WHERE fecha_entrega > fecha_esperada;
-    ```
-
-11. Devuelve un listado de las diferentes gamas de producto que ha comprado cada cliente.
-
-    ```SQL
-    SELECT c.codigo_cliente, c.nombre_cliente, GROUP_CONCAT(DISTINCT pro.gama SEPARATOR ', ') AS gamas_producto 
-    FROM cliente c
-    JOIN pedido pe ON pe.codigo_cliente = c.codigo_cliente
-    JOIN detalle_pedido dp ON dp.codigo_pedido = pe.codigo_pedido
-    JOIN pago pag ON pag.codigo_cliente = c.codigo_cliente
-    JOIN producto pro ON dp.codigo_producto = pro.codigo_producto
-    GROUP BY c.codigo_cliente
-    ORDER BY c.codigo_cliente;
-    ```
-    
------------------------------------------------------------------------------
+ ```
 
 ## Resuelva todas las consultas utilizando las cláusulas LEFT JOIN, RIGHT JOIN, NATURAL LEFT JOIN y NATURAL RIGHT JOIN.
 
@@ -244,63 +232,107 @@ left join cliente c on e1.codigo_empleado = c.codigo_empleado_rep_ventas
 left join empleado e2 on e1.codigo_jefe = e2.codigo_empleado 
 where  c.codigo_empleado_rep_ventas is null
 order by e1.nombre;
-
------------------------------------------------------------------------
-
+```
 1. Devuelve un listado con el código de oficina y la ciudad donde hay oficinas.
 ```SQL
-select codigo_oficina, ciudad from oficina;
+select codigo_oficina, ciudad 
+from oficina;
 ```
 
 2. Devuelve un listado con la ciudad y el teléfono de las oficinas de España.
 ```SQL
-select ciudad, telefono from oficina where pais = 'españa';
+select ciudad, telefono 
+from oficina 
+where pais = 'españa';
 ```
 
 3. Devuelve un listado con el nombre, apellidos y email de los empleados cuyo jefe tiene un código de jefe igual a 7.
 ```SQL
-select nombre, apellido1, apellido2, email from empleado where codigo_jefe = 7;
+select nombre, apellido1, apellido2, email 
+from empleado 
+where codigo_jefe = 7;
 ```
 
 4. Devuelve el nombre del puesto, nombre, apellidos y email del jefe de la empresa.
 ```SQL
-select puesto, nombre, apellido1, apellido2, email from empleado where codigo_jefe is null;
+select puesto, nombre, apellido1, apellido2, email 
+from empleado 
+where codigo_jefe is null;
 ```
 
 5. Devuelve un listado con el nombre, apellidos y puesto de aquellos empleados que no sean representantes de ventas.
 ```SQL
-select nombre, apellido1, apellido2, puesto from empleado where puesto <> 'representante de ventas';
+select nombre, apellido1, apellido2, puesto 
+from empleado 
+where puesto <> 'representante de ventas';
 ```
 6. Devuelve un listado con el nombre de los todos los clientes españoles.
 ```SQL
-select nombre_cliente from cliente where pais = 'spain';
+select nombre_cliente 
+from cliente 
+where pais = 'spain';
 ```
 
 7. Devuelve un listado con los distintos estados por los que puede pasar un pedido.
 ```SQL
-select distinct estado from pedido;
+select distinct estado 
+from pedido;
 ```
 
 8. Devuelve un listado con el código de cliente de aquellos clientes que realizaron algún pago en 2008. Tenga en cuenta que deberá eliminar aquellos códigos de cliente que aparezcan repetidos. Resuelva la consulta:
 
+- Utilizando la función YEAR de MySQL.
+- Utilizando la función DATE_FORMAT de MySQL.
+- Sin utilizar ninguna de las funciones anteriores.
+
 ```SQL
-select distinct codigo_cliente from pago where year(fecha_pago) = 2008;
+select distinct codigo_cliente 
+from pago 
+where year(fecha_pago) = 2008;
+```
+
+```SQL
+select distinct codigo_cliente 
+from pago 
+where date_format(fecha_pago, '%Y') = '2008';
+```
+
+```SQL
+select distinct codigo_cliente 
+from pago 
+where fecha_pago >= '2008-01-01' and fecha_pago < '2009-01-01';
 ```
 
 9. Devuelve un listado con el código de pedido, código de cliente, fecha esperada y fecha de entrega de los pedidos que no han sido entregados a tiempo.
 ```SQL
-select codigo_pedido, codigo_cliente, fecha_esperada, fecha_entrega from pedido where fecha_entrega > fecha_esperada;
+select codigo_pedido, codigo_cliente, fecha_esperada, fecha_entrega 
+from pedido 
+where fecha_entrega > fecha_esperada;
 
 ```
-
 10. Devuelve un listado con el código de pedido, código de cliente, fecha esperada y fecha de entrega de los pedidos cuya fecha de entrega ha sido al menos dos días antes de la fecha esperada.
 
+- Utilizando la función ADDDATE de MySQL.
+- Utilizando la función DATEDIFF de MySQL.
+- add date 
 ```SQL
 select codigo_pedido, codigo_cliente, fecha_esperada, fecha_entrega
 from pedido
 where fecha_entrega <= ADDDATE(fecha_esperada, -2);
 ```
+-- DATEDIFF
+```SQL
+select codigo_pedido, codigo_cliente, fecha_esperada, fecha_entrega
+from pedido
+where DATEDIFF(fecha_entrega, fecha_esperada) <= -2;
 
+```
+-- suma + o resta
+```SQL
+select codigo_pedido, codigo_cliente, fecha_esperada, fecha_entrega
+from pedido
+where fecha_entrega <= fecha_esperada - INTERVAL 2 DAY;
+```
 11. Devuelve un listado de todos los pedidos que fueron rechazados en 2009.
 ```SQL
 select *
@@ -342,5 +374,4 @@ order by precio_venta DESC;
 select *
 from cliente
 where ciudad = 'Madrid' and (codigo_empleado_rep_ventas = 11 or codigo_empleado_rep_ventas = 30);
-
-----------------------------------------------------------------------------
+```
