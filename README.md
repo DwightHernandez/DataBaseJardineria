@@ -375,3 +375,269 @@ select *
 from cliente
 where ciudad = 'Madrid' and (codigo_empleado_rep_ventas = 11 or codigo_empleado_rep_ventas = 30);
 ```
+-------------------------------------------------------------------------------------------------------------------------------------------------
+-- 1. Devuelve el nombre del cliente con mayor límite de crédito.
+SELECT *
+FROM cliente AS c1
+WHERE c1.limite_credito = (
+    SELECT MAX(limite_credito) 
+    FROM cliente
+);  
+
+-- 2. Devuelve el nombre del producto que tenga el precio de venta más caro.
+SELECT nombre_producto
+FROM producto AS p1
+WHERE p1.precio_venta = (
+    SELECT MAX(precio_venta) 
+    FROM producto
+);
+
+-- 3. Devuelve el nombre del producto del que se han vendido más unidades.
+SELECT nombre_producto
+FROM producto AS p1
+WHERE p1.codigo_producto = (
+    SELECT codigo_producto
+    FROM detalle_pedido AS dp1
+    GROUP BY codigo_producto
+    ORDER BY SUM(cantidad) DESC
+    LIMIT 1
+);
+
+-- 4. Los clientes cuyo límite de crédito sea mayor que los pagos que haya realizado.
+SELECT nombre_cliente
+FROM cliente AS c1
+WHERE c1.limite_credito > (
+    SELECT SUM(total)
+    FROM pago AS p1
+    WHERE p1.codigo_cliente = c1.codigo_cliente
+    GROUP BY codigo_cliente
+);
+
+-- 5. Devuelve el producto que más unidades tiene en stock.
+SELECT p1.*
+FROM producto AS p1
+WHERE p1.cantidad_en_stock = (
+    SELECT MAX(p2.cantidad_en_stock)
+    FROM producto AS p2
+)
+ORDER BY p1.nombre;
+
+-- 6. Devuelve el producto que menos unidades tiene en stock.
+SELECT nombre_producto
+FROM producto AS p1
+WHERE p1.cantidad_en_stock = (
+    SELECT MIN(p2.cantidad_en_stock)
+    FROM producto AS p2
+);
+
+-- 7. Devuelve el nombre, los apellidos y el email de los empleados que están a cargo de Alberto Soria.
+SELECT e1.nombre, e1.apellido1, e1.email
+FROM empleado AS e1
+WHERE e1.codigo_jefe = (
+    SELECT e2.codigo_empleado
+    FROM empleado AS e2
+    WHERE CONCAT(e2.nombre, ' ', e2.apellido1) = 'Alberto Soria'
+);
+---
+-- 1. Devuelve el nombre del cliente con mayor límite de crédito.
+SELECT nombre_cliente, limite_credito
+FROM cliente
+WHERE limite_credito = (
+    SELECT MAX(limite_credito)
+    FROM cliente
+);
+
+-- 2. Devuelve el nombre del producto que tenga el precio de venta más caro.
+SELECT nombre
+FROM producto
+WHERE precio_venta = (
+    SELECT MAX(precio_venta)
+    FROM producto
+);
+
+-- 3. Devuelve el producto que menos unidades tiene en stock.
+SELECT nombre
+FROM producto
+WHERE cantidad_en_stock = (
+    SELECT MIN(cantidad_en_stock)
+    FROM producto
+);
+---
+1.4.8.3 Subconsultas con IN y NOT IN
+
+-- 1. Devuelve el nombre, apellido1 y cargo de los empleados que no representen a ningún cliente.
+SELECT nombre, apellido1, puesto
+FROM empleado
+WHERE codigo_empleado NOT IN (
+    SELECT DISTINCT codigo_empleado_rep_ventas 
+    FROM cliente
+);
+
+-- 2. Devuelve un listado que muestre solamente los clientes que no han realizado ningún pago.
+SELECT *
+FROM cliente
+WHERE codigo_cliente NOT IN (
+    SELECT DISTINCT codigo_cliente 
+    FROM pago
+);
+
+-- 3. Devuelve un listado que muestre solamente los clientes que sí han realizado algún pago.
+SELECT *
+FROM cliente
+WHERE codigo_cliente IN (
+    SELECT DISTINCT codigo_cliente 
+    FROM pago
+);
+
+-- 4. Devuelve un listado de los productos que nunca han aparecido en un pedido.
+SELECT *
+FROM producto
+WHERE codigo_producto NOT IN (
+    SELECT DISTINCT codigo_producto 
+    FROM detalle_pedido
+);
+
+-- 5. Devuelve el nombre, apellidos, puesto y teléfono de la oficina de aquellos empleados que no sean representantes de ventas de ningún cliente.
+SELECT e.nombre, e.apellido1, e.puesto, o.telefono
+FROM empleado e
+JOIN oficina o ON e.codigo_oficina = o.codigo_oficina
+WHERE e.codigo_empleado NOT IN (
+    SELECT DISTINCT codigo_empleado_rep_ventas 
+    FROM cliente
+);
+
+-- 6. Devuelve las oficinas donde no trabajan ninguno de los empleados que hayan sido los representantes de ventas de algún cliente que haya realizado la compra de algún producto de la gama 'Frutales'.
+SELECT DISTINCT o.*
+FROM oficina o
+LEFT JOIN empleado e ON o.codigo_oficina = e.codigo_oficina
+WHERE e.codigo_empleado NOT IN (
+    SELECT DISTINCT codigo_empleado_rep_ventas 
+    FROM cliente 
+    WHERE codigo_cliente IN (
+        SELECT DISTINCT codigo_cliente 
+        FROM pedido p 
+        JOIN detalle_pedido dp ON p.codigo_pedido = dp.codigo_pedido 
+        JOIN producto pr ON dp.codigo_producto = pr.codigo_producto 
+        WHERE pr.gama = 'Frutales'
+    )
+);
+
+-- 7. Devuelve un listado con los clientes que han realizado algún pedido pero no han realizado ningún pago.
+SELECT *
+FROM cliente
+WHERE codigo_cliente IN (
+    SELECT DISTINCT codigo_cliente 
+    FROM pedido
+) 
+AND codigo_cliente NOT IN (
+    SELECT DISTINCT codigo_cliente 
+    FROM pago
+);
+---
+-- 1.4.8.4 Subconsultas con EXISTS y NOT EXISTS
+
+-- 1. Devuelve un listado que muestre solamente los clientes que no han realizado ningún pago.
+SELECT *
+FROM cliente c
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM pago p
+    WHERE c.codigo_cliente = p.codigo_cliente
+);
+
+-- 2. Devuelve un listado que muestre solamente los clientes que sí han realizado algún pago.
+SELECT *
+FROM cliente c
+WHERE EXISTS (
+    SELECT 1
+    FROM pago p
+    WHERE c.codigo_cliente = p.codigo_cliente
+);
+
+-- 3. Devuelve un listado de los productos que nunca han aparecido en un pedido.
+SELECT *
+FROM producto pr
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM detalle_pedido dp
+    WHERE pr.codigo_producto = dp.codigo_producto
+);
+
+-- 4. Devuelve un listado de los productos que han aparecido en un pedido alguna vez.
+SELECT  *
+FROM producto pr
+WHERE EXISTS (
+    SELECT 1
+    FROM detalle_pedido dp
+    WHERE pr.codigo_producto = dp.codigo_producto
+);
+
+-- 5 TIPS con GROUP BY
+
+-- 1. Muestra el nombre, límite de crédito y cantidad de pedidos que ha hecho cada cliente.
+SELECT c.nombre_cliente, c.limite_credito, COUNT(*) AS total_pedido_por_cliente 
+FROM cliente c
+JOIN pedido p ON c.codigo_cliente = p.codigo_cliente
+GROUP BY c.nombre_cliente, c.limite_credito;
+
+-- 2. Muestra el total de ventas por cliente que tenga al menos dos pedidos realizados.
+SELECT nombre_cliente, total_ventas
+FROM (
+  SELECT c.nombre_cliente, p.codigo_pedido, SUM(dp.cantidad * dp.precio_unidad ) AS total_ventas
+  FROM cliente c
+  JOIN pedido p ON c.codigo_cliente = p.codigo_cliente
+  JOIN detalle_pedido dp ON p.codigo_pedido = dp.codigo_pedido
+  GROUP BY c.nombre_cliente, p.codigo_pedido
+) AS ventas_por_pedido
+GROUP BY nombre_cliente
+HAVING COUNT(codigo_pedido) >= 2;
+
+-- 3. Muestra los primeros 30 caracteres de la descripción de los productos de la tabla "producto".
+SELECT codigo_producto, nombre, SUBSTRING(descripcion, 1, 30) AS descripcion_cortada
+FROM producto;
+
+-- 4. Combina y muestra los nombres de clientes de la tabla "cliente" con los nombres de empleados de la tabla "empleado" en una lista única utilizando UNION ALL.
+SELECT nombre_cliente AS nombre, 'cliente' AS tipo FROM cliente 
+UNION ALL 
+SELECT CONCAT(nombre, ' ', apellido1, ' ') AS nombre, 'empleado' AS tipo FROM empleado;
+
+-- 5. Concatena los nombres de empleados con su cliente asignado.
+SELECT e.nombre AS nombre_empleado, GROUP_CONCAT(c.nombre_cliente) AS nombre_cliente
+FROM empleado e
+LEFT JOIN cliente c ON e.codigo_empleado = c.codigo_empleado_rep_ventas
+GROUP BY e.nombre;
+
+-- 5 TIPS con WHERE en SQL
+
+-- 1. Muestra los clientes que no han realizado ningún pedido.
+SELECT nombre_cliente
+FROM cliente
+WHERE codigo_cliente NOT IN (SELECT DISTINCT codigo_cliente FROM pedido);
+
+-- 2. Obtiene el nombre de los clientes que han realizado pedidos más de una vez.
+SELECT c.nombre_cliente
+FROM cliente c
+WHERE c.codigo_cliente IN (
+    SELECT DISTINCT codigo_cliente
+    FROM pedido
+    GROUP BY codigo_cliente
+    HAVING COUNT(codigo_pedido) > 1
+);
+
+-- 3. Obtiene una lista de empleados cuyos nombres comiencen con 'M' y cuyo apellido1 comience con 'p'.
+SELECT *
+FROM empleado
+WHERE nombre REGEXP '^M' AND apellido1 REGEXP '^p';
+
+-- 4. Obtiene una lista de empleados que trabajan en oficinas ubicadas en las ciudades de Barcelona y Madrid.
+SELECT *
+FROM empleado
+WHERE codigo_oficina IN (
+    SELECT DISTINCT codigo_oficina
+    FROM oficina
+    WHERE ciudad IN ('Barcelona', 'Madrid')
+);
+
+-- 5. Convierte los nombres de los empleados a mayúsculas.
+SELECT UPPER(nombre) AS nombre_en_mayusculas
+FROM empleado;
